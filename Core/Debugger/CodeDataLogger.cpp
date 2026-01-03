@@ -127,21 +127,35 @@ CdlStatistics CodeDataLogger::GetStatistics()
 
 bool CodeDataLogger::IsCode(uint32_t absoluteAddr)
 {
+	if(absoluteAddr >= _memSize) {
+		return false;
+	}
 	return (_cdlData[absoluteAddr] & CdlFlags::Code) != 0;
 }
 
 bool CodeDataLogger::IsJumpTarget(uint32_t absoluteAddr)
 {
+	if(absoluteAddr >= _memSize) {
+		return false;
+	}
+
 	return (_cdlData[absoluteAddr] & CdlFlags::JumpTarget) != 0;
 }
 
 bool CodeDataLogger::IsSubEntryPoint(uint32_t absoluteAddr)
 {
+	if(absoluteAddr >= _memSize) {
+		return false;
+	}
+
 	return (_cdlData[absoluteAddr] & CdlFlags::SubEntryPoint) != 0;
 }
 
 bool CodeDataLogger::IsData(uint32_t absoluteAddr)
 {
+	if(absoluteAddr >= _memSize) {
+		return false;
+	}
 	return (_cdlData[absoluteAddr] & CdlFlags::Data) != 0;
 }
 

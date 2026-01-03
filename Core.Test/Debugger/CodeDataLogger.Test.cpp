@@ -42,5 +42,34 @@ namespace Test_Debugger
 			TestLogger logger(0x100);
 			Assert::IsNotNull(logger.GetRawData(), L"Raw data buffer should be allocated even with null debugger");
 		}
+		TEST_METHOD(IsCode_Addr_Outside_Memsize_Clamps)
+		{
+			constexpr uint32_t memSize = 0x100;
+			TestLogger logger(memSize);
+			constexpr uint32_t dangerousAddr = 0xFFFFFFFF;
+			Assert::IsFalse(logger.IsCode(dangerousAddr), L"crashed or returned garbage for high address");
+		}
+		TEST_METHOD(IsData_Addr_Outside_Memsize_Clamps)
+		{
+			constexpr uint32_t memSize = 0x100;
+			TestLogger logger(memSize);
+			constexpr uint32_t dangerousAddr = 0xFFFFFFFF;
+			Assert::IsFalse(logger.IsData(dangerousAddr), L"crashed or returned garbage for high address");
+		}
+
+		TEST_METHOD(IsJumpTarget_Addr_Outside_Memsize_Clamps)
+		{
+			constexpr uint32_t memSize = 0x100;
+			TestLogger logger(memSize);
+			constexpr uint32_t dangerousAddr = 0xFFFFFFFF;
+			Assert::IsFalse(logger.IsJumpTarget(dangerousAddr), L"crashed or returned garbage for high address");
+		}
+		TEST_METHOD(IsSubEntryPoint_Addr_Outside_Memsize_Clamps)
+		{
+			constexpr uint32_t memSize = 0x100;
+			TestLogger logger(memSize);
+			constexpr uint32_t dangerousAddr = 0xFFFFFFFF;
+			Assert::IsFalse(logger.IsSubEntryPoint(dangerousAddr), L"crashed or returned garbage for high address");
+		}
 	};
 }
