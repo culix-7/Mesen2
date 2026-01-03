@@ -30,7 +30,9 @@ CodeDataLogger::~CodeDataLogger()
 
 void CodeDataLogger::Reset()
 {
-	memset(_cdlData, 0, _memSize);
+	if(_cdlData) {
+		memset(_cdlData, 0, _memSize);
+	}
 }
 
 uint8_t* CodeDataLogger::GetRawData()
