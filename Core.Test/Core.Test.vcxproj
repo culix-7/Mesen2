@@ -22,6 +22,15 @@
     <ProjectReference Include="..\Core\Core.vcxproj">
       <Project>{78fef1a1-6df1-4cbb-a373-ae6fa7ce5ce0}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\Lua\Lua.vcxproj">
+      <Project>{b609e0a0-5050-4871-91d6-e760633bcdd1}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\SevenZip\SevenZip.vcxproj">
+      <Project>{52c4ba3a-e699-4305-b23f-c9083fd07ab6}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\Utilities\Utilities.vcxproj">
+      <Project>{b5330148-e8c7-46ba-b54e-69be59ea337d}</Project>
+    </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{20DC996B-90E6-C763-B1CE-B6A48C8391F9}</ProjectGuid>
