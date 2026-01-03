@@ -24,8 +24,11 @@ if exist "MesenCore.dll" (
     exit /b 1
 )
 
-cd Dependencies
-del ..\Dependencies.zip
+:: expand variable to use the full path with ~f. otherwise powershell has difficulty
+set "FULL_OUTDIR=%~f1"
+set "ZIP=%FULL_OUTDIR%\Dependencies.zip"
+del "%ZIP%"
 
-powershell -Command "Compress-Archive -Path * -DestinationPath '..\Dependencies.zip' -Force"
-copy /y "..\Dependencies.zip" "%PROJECT_DIR%"
+powershell -Command "Compress-Archive -Path (Get-Item '%FULL_OUTDIR%\Dependencies') -DestinationPath '%ZIP%' -Force"
+copy /y "%ZIP%" "%PROJECT_DIR%"
+
