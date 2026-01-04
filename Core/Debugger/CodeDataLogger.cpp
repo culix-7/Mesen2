@@ -204,6 +204,11 @@ uint32_t CodeDataLogger::GetFunctions(uint32_t functions[], uint32_t maxSize)
 
 void CodeDataLogger::MarkBytesAs(uint32_t start, uint32_t end, uint8_t flags)
 {
+	if(end >= _memSize) {
+		MessageManager::Log("[Warning] end >= _memSize; capping CDL bytes");
+		end = _memSize - 1;
+	}
+
 	for(uint32_t i = start; i <= end; i++) {
 		_cdlData[i] = (_cdlData[i] & 0xFC) | (int)flags;
 	}

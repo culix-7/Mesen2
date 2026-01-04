@@ -185,6 +185,21 @@ namespace Test_Debugger
 			Assert::IsFalse(logger.IsSubEntryPoint(dangerousAddr), L"crashed or returned garbage for high address");
 		}
 
+		TEST_METHOD(MarkBytesAs_End_Greater_Than_Memsize_Clamps)
+		{
+			constexpr uint32_t memSize = 0x100;
+			constexpr uint32_t endTooFar = memSize + 0x100;
+			constexpr uint32_t start = 90;
+			Assert::IsTrue(start + endTooFar > memSize, L"Incorrect test setup: MarkBytes outside of memSize.");
+
+			TestLogger logger(memSize);
+			logger.MarkBytesAs(start, endTooFar, CdlFlags::Code);
+
+			Assert::AreEqual((uint8_t)CdlFlags::Code, logger.GetFlags(start), L"Start of buffer should be marked safely");
+			Assert::AreEqual((uint8_t)CdlFlags::Code, logger.GetFlags(memSize - 1), L"End of buffer should be marked safely");
+			Assert::AreEqual((uint8_t)0, logger.GetFlags(memSize), L"Data past end should not be modified");
+		}
+
 		TEST_METHOD(SetCdlData_Length_Greater_Than_Memsize_Does_Not_Crash)
 		{
 			constexpr uint32_t memSize = 0x100;
