@@ -20,6 +20,9 @@
     <ClCompile Include="Debugger\CodeDataLogger.Test.cpp">
       <Filter>Debugger</Filter>
     </ClCompile>
+    <ClCompile Include="TestUtil\TempFile.Test.cpp">
+      <Filter>TestUtil</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
