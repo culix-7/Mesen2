@@ -184,6 +184,10 @@ uint8_t CodeDataLogger::GetFlags(uint32_t addr)
 
 uint32_t CodeDataLogger::GetFunctions(uint32_t functions[], uint32_t maxSize)
 {
+	if(!functions) {
+		return 0;
+	}
+
 	uint32_t count = 0;
 	for(int i = 0, len = _memSize; i < len; i++) {
 		if(IsSubEntryPoint(i)) {

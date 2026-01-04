@@ -131,6 +131,30 @@ namespace Test_Debugger
 			Assert::AreEqual((uint8_t)0, logger.GetFlags(outOfBoundsAddr), L"GetFlags should return 0 for OOB");
 		}
 
+		TEST_METHOD(GetFunctions_Returns_Data)
+		{
+			constexpr uint32_t memSize = 0x100;
+			TestLogger logger(memSize);
+			logger.MarkBytesAs(0, 49, CdlFlags::SubEntryPoint);
+
+			struct
+			{
+				uint32_t list[10];
+			} data;
+
+			const uint32_t count = logger.GetFunctions(data.list, 10);
+			Assert::AreEqual((uint32_t)10, count, L"Count should be capped at maxSize");
+			Assert::AreEqual((uint32_t)0, data.list[0], L"First entry should be address 0");
+			Assert::AreEqual((uint32_t)9, data.list[9], L"Last entry should be address 9");
+		}
+
+		TEST_METHOD(GetFunctions_NullBuffer_Does_Not_Crash)
+		{
+			TestLogger logger(0x100);
+			logger.MarkBytesAs(0, 0, CdlFlags::SubEntryPoint);
+			logger.GetFunctions(nullptr, 10);
+		}
+
 		TEST_METHOD(IsCode_Addr_Outside_Memsize_Clamps)
 		{
 			constexpr uint32_t memSize = 0x100;
