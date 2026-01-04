@@ -7,6 +7,14 @@
     <Filter Include="Debugger">
       <UniqueIdentifier>{dc955070-0465-4f07-9feb-f62abd34603b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="TestUtil">
+      <UniqueIdentifier>{8a68fd58-15c6-4a54-bc57-35547b27c900}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="TestUtil\TempFile.h">
+      <Filter>TestUtil</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Debugger\CodeDataLogger.Test.cpp">
