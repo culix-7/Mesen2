@@ -161,7 +161,7 @@ bool CodeDataLogger::IsData(uint32_t absoluteAddr)
 
 void CodeDataLogger::SetCdlData(uint8_t *cdlData, uint32_t length)
 {
-	if(length <= _memSize) {
+	if(cdlData && length <= _memSize) {
 		memcpy(_cdlData, cdlData, length);
 	}
 }

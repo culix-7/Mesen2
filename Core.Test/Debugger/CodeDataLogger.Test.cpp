@@ -71,5 +71,28 @@ namespace Test_Debugger
 			constexpr uint32_t dangerousAddr = 0xFFFFFFFF;
 			Assert::IsFalse(logger.IsSubEntryPoint(dangerousAddr), L"crashed or returned garbage for high address");
 		}
+
+		TEST_METHOD(SetCdlData_Length_Greater_Than_Memsize_Does_Not_Crash)
+		{
+			constexpr uint32_t memSize = 0x100;
+			TestLogger logger(memSize);
+
+			uint8_t sourceData[] = { 0xAA, 0xBB, 0xCC, 0xDD };
+
+			logger.SetCdlData(sourceData, 0xFFFFFFFF);
+			const uint8_t* internalData = logger.GetRawData();
+			for(uint32_t i = 0; i < memSize; i++) {
+				Assert::AreEqual((uint8_t)0, internalData[i], L"Data was modified despite invalid length");
+			}
+		}
+
+		TEST_METHOD(SetCdlData_Null_Pointer_Does_Not_Crash)
+		{
+			constexpr uint32_t memSize = 0x100;
+			TestLogger logger(memSize);
+
+			logger.SetCdlData(nullptr, 1);
+			Assert::IsTrue(true, L"SetCdlData did not crash.");
+		}
 	};
 }
