@@ -50,6 +50,16 @@ MemoryType CodeDataLogger::GetMemoryType()
 	return _memType;
 }
 
+/**
+ * Read a CDL file and load contents into memory.
+ *
+ * Checks the 4-byte CRC32 value of the CDL file against the expected CRC32 for the current ROM. If checksums do not match, clears all CDL data and starts over from zero.
+ *
+ * @param cdlFilepath Valid path to the file to read.
+ * @param autoResetCdl If false: ignore mismatched CRC and load CDL data even if checksums do not match.
+ *
+ * @return Returns true if the file was successfully read and loaded, and false otherwise.
+ */
 bool CodeDataLogger::LoadCdlFile(string cdlFilepath, bool autoResetCdl)
 {
 	VirtualFile cdlFile = cdlFilepath;
@@ -65,6 +75,7 @@ bool CodeDataLogger::LoadCdlFile(string cdlFilepath, bool autoResetCdl)
 				if((!autoResetCdl || savedCrc == _romCrc32) && fileSize >= _memSize + CodeDataLogger::HeaderSize) {
 					memcpy(_cdlData, cdlData.data() + CodeDataLogger::HeaderSize, _memSize);
 					InternalLoadCdlFile(cdlData.data() + CodeDataLogger::HeaderSize, (uint32_t)cdlData.size() - CodeDataLogger::HeaderSize);
+					return true;
 				}
 			} else {
 				MessageManager::Log("[Warning] CDL file doesn't contain header/CRC and may be incompatible.");
@@ -72,9 +83,8 @@ bool CodeDataLogger::LoadCdlFile(string cdlFilepath, bool autoResetCdl)
 				//Older CRC-less CDL file, use as-is without checking CRC to avoid data loss
 				memcpy(_cdlData, cdlData.data(), _memSize);
 				InternalLoadCdlFile(cdlData.data(), (uint32_t)cdlData.size());
+				return true;
 			}
-			
-			return true;
 		}
 	}
 	return false;
