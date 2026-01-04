@@ -175,6 +175,10 @@ void CodeDataLogger::GetCdlData(uint32_t offset, uint32_t length, uint8_t *cdlDa
 
 uint8_t CodeDataLogger::GetFlags(uint32_t addr)
 {
+	if(addr >= _memSize) {
+		return 0;
+	}
+
 	return _cdlData[addr];
 }
 

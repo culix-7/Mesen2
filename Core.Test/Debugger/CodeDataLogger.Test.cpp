@@ -122,6 +122,15 @@ namespace Test_Debugger
 			logger.GetCdlData(memSize - 1, 1, &out);
 			Assert::AreNotEqual((uint8_t)0xEE, out, L"Failed to read the last valid byte of the buffer!");
 		}
+		TEST_METHOD(GetFlags_Addr_Outside_Memsize_Returns)
+		{
+			constexpr uint32_t memSize = 0x100;
+			TestLogger logger(memSize);
+			constexpr uint32_t outOfBoundsAddr = 0xFFFFFFFF;
+			Assert::IsTrue(outOfBoundsAddr > memSize);
+			Assert::AreEqual((uint8_t)0, logger.GetFlags(outOfBoundsAddr), L"GetFlags should return 0 for OOB");
+		}
+
 		TEST_METHOD(IsCode_Addr_Outside_Memsize_Clamps)
 		{
 			constexpr uint32_t memSize = 0x100;
