@@ -18,7 +18,9 @@ CodeDataLogger::CodeDataLogger(Debugger* debugger, MemoryType memType, uint32_t 
 	_cdlData = new uint8_t[memSize];
 	Reset();
 
-	debugger->GetCdlManager()->RegisterCdl(memType, this);
+	if(debugger && debugger->GetCdlManager()) {
+		debugger->GetCdlManager()->RegisterCdl(memType, this);
+	}
 }
 
 CodeDataLogger::~CodeDataLogger()
