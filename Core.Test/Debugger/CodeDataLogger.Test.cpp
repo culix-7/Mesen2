@@ -42,6 +42,86 @@ namespace Test_Debugger
 			TestLogger logger(0x100);
 			Assert::IsNotNull(logger.GetRawData(), L"Raw data buffer should be allocated even with null debugger");
 		}
+		TEST_METHOD(GetCdlData_Destination_Null_Pointer_Does_Not_Crash)
+		{
+			constexpr uint32_t memSize = 0x100;
+			TestLogger logger(memSize);
+			logger.GetCdlData(0, memSize / 2, nullptr);
+			Assert::IsTrue(true, L"If we reached here, GetCdlData didn't crash");
+		}
+		TEST_METHOD(GetCdlData_Valid_Offset_Valid_Length_Reads_Data)
+		{
+			constexpr uint32_t memSize = 0x100;
+			TestLogger logger(memSize);
+			constexpr uint32_t copySize = memSize * 2;
+
+			uint8_t output[copySize];
+			std::fill(std::begin(output), std::end(output), 0xEE);
+
+			constexpr uint32_t offset = 10;
+			constexpr uint32_t length = 10;
+
+			logger.GetCdlData(offset, length, output);
+
+			const bool copied = std::all_of(output, output + length,
+				[](uint8_t b) { return b == 0x00; });
+			Assert::IsTrue(copied, L"data not copied");
+			const bool unchanged = std::all_of(output + length, output + copySize,
+				[](uint8_t b) { return b == 0xEE; });
+			Assert::IsTrue(unchanged, L"data copied too far!");
+		}
+		TEST_METHOD(GetCdlData_Valid_Offset_Invalid_Length_Stops)
+		{
+			constexpr uint32_t memSize = 0x100;
+			TestLogger logger(memSize);
+			constexpr uint32_t copySize = memSize * 2;
+
+			uint8_t output[copySize];
+			std::fill(std::begin(output), std::end(output), 0xEE);
+
+			logger.GetCdlData(10, memSize + 10, output);
+			const bool unchanged = std::all_of(std::begin(output), std::end(output),
+				[](uint8_t b) { return b == 0xEE; });
+			Assert::IsTrue(unchanged, L"memcpy ran off the end");
+		}
+		TEST_METHOD(GetCdlData_Invalid_Offset_Valid_Length_Stops)
+		{
+			constexpr uint32_t memSize = 0x100;
+			TestLogger logger(memSize);
+			constexpr uint32_t copySize = memSize * 2;
+
+			uint8_t output[copySize];
+			std::fill(std::begin(output), std::end(output), 0xEE);
+
+			logger.GetCdlData(memSize + 10, 10, output);
+			const bool unchanged = std::all_of(std::begin(output), std::end(output),
+				[](uint8_t b) { return b == 0xEE; });
+			Assert::IsTrue(unchanged, L"memcpy ran off the end");
+		}
+		TEST_METHOD(GetCdlData_Invalid_Offset_Invalid_Length_Stops)
+		{
+			constexpr uint32_t memSize = 0x100;
+			TestLogger logger(memSize);
+			constexpr uint32_t copySize = memSize * 2;
+
+			uint8_t output[copySize];
+			std::fill(std::begin(output), std::end(output), 0xEE);
+
+			logger.GetCdlData(memSize + 10, memSize + 10, output);
+			const bool unchanged = std::all_of(std::begin(output), std::end(output),
+				[](uint8_t b) { return b == 0xEE; });
+			Assert::IsTrue(unchanged, L"memcpy ran off the end");
+		}
+
+		TEST_METHOD(GetCdlData_Can_Read_Last_Byte)
+		{
+			constexpr uint32_t memSize = 0x100;
+			TestLogger logger(memSize);
+			uint8_t out = 0xEE;
+
+			logger.GetCdlData(memSize - 1, 1, &out);
+			Assert::AreNotEqual((uint8_t)0xEE, out, L"Failed to read the last valid byte of the buffer!");
+		}
 		TEST_METHOD(IsCode_Addr_Outside_Memsize_Clamps)
 		{
 			constexpr uint32_t memSize = 0x100;

@@ -168,7 +168,9 @@ void CodeDataLogger::SetCdlData(uint8_t *cdlData, uint32_t length)
 
 void CodeDataLogger::GetCdlData(uint32_t offset, uint32_t length, uint8_t *cdlData)
 {
-	memcpy(cdlData, _cdlData + offset, length);
+	if(cdlData && (offset + length <= _memSize)) {
+		memcpy(cdlData, _cdlData + offset, length);
+	}
 }
 
 uint8_t CodeDataLogger::GetFlags(uint32_t addr)
