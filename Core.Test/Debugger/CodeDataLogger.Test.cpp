@@ -155,6 +155,26 @@ namespace Test_Debugger
 			logger.GetFunctions(nullptr, 10);
 		}
 
+		TEST_METHOD(GetStatistics_Returns_Correct_Numbers)
+		{
+			constexpr uint32_t memSize = 0x100;
+			TestLogger logger(memSize);
+
+			constexpr uint32_t codeStart = 0;
+			constexpr uint32_t codeEnd = 10;
+			logger.MarkBytesAs(codeStart, codeEnd, CdlFlags::Code);
+
+			constexpr uint32_t dataStart = 20;
+			constexpr uint32_t dataEnd = 32;
+			logger.MarkBytesAs(dataStart, dataEnd, CdlFlags::Data);
+
+			const CdlStatistics stats = logger.GetStatistics();
+
+			Assert::AreEqual(codeEnd - codeStart + 1, stats.CodeBytes, L"Code stats incorrect");
+			Assert::AreEqual(dataEnd - dataStart + 1, stats.DataBytes, L"Data stats incorrect");
+			Assert::AreEqual(memSize, stats.TotalBytes, L"Total bytes incorrect");
+		}
+
 		TEST_METHOD(IsCode_Addr_Outside_Memsize_Clamps)
 		{
 			constexpr uint32_t memSize = 0x100;
