@@ -118,7 +118,7 @@ CdlStatistics CodeDataLogger::GetStatistics()
 	uint32_t dataSize = 0;
 	uint32_t bothSize = 0;
 
-	for(int i = 0, len = _memSize; i < len; i++) {
+	for(uint32_t i = 0, len = _memSize; i < len; i++) {
 		uint32_t isCode = (uint32_t)(_cdlData[i] & CdlFlags::Code);
 		uint32_t isData = (uint32_t)(_cdlData[i] & CdlFlags::Data) >> 1;
 		codeSize += isCode;
