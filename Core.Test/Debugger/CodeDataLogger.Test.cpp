@@ -1,9 +1,13 @@
 #include "pch.h"
 #include "Debugger/CodeDataLogger.h"
 #include "Debugger/Debugger.h"
+#include "TestUtil/TempFile.h"
+
 #include "CppUnitTest.h"
 
 #include <algorithm>
+#include <fstream>
+#include <vector>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -20,6 +24,14 @@ namespace Test_Debugger
 
 	TEST_CLASS(Test_CodeDataLogger)
 	{
+		void AssertRange(CodeDataLogger& logger, uint32_t start, uint32_t end, uint8_t expectedFlag, const wchar_t* message)
+		{
+			auto data = logger.GetRawData();
+			const bool match = std::all_of(data + start, data + end + 1,
+											[expectedFlag](uint8_t b) { return b == expectedFlag; });
+
+			Assert::IsTrue(match, message);
+		}
 
 	public:
 
@@ -203,6 +215,120 @@ namespace Test_Debugger
 			TestLogger logger(memSize);
 			constexpr uint32_t dangerousAddr = 0xFFFFFFFF;
 			Assert::IsFalse(logger.IsSubEntryPoint(dangerousAddr), L"crashed or returned garbage for high address");
+		}
+
+		TEST_METHOD(LoadCdlFile_NonExistentFile_ShouldReturnFalse)
+		{
+			TestLogger logger(0x100, 0);
+			Assert::IsFalse(logger.LoadCdlFile("does_not_exist.cdl", true), L"Should fail for non-existent file");
+		}
+
+		TEST_METHOD(LoadCdlFile_File_Too_Small_Has_Empty_Data)
+		{
+			constexpr uint32_t memSize = 0x100;
+			TestLogger logger(memSize, 0x11111111);
+			TempFile testFile("too_small.cdl");
+
+			{
+				ofstream outFile(testFile, std::ios::binary | std::ios::trunc);
+				outFile.write("123", 3);
+				outFile.close();
+			}
+
+			Assert::IsFalse(logger.LoadCdlFile(testFile, true), L"Should reject truncated file");
+			AssertRange(logger, 0, memSize - 1, 0, L"File too small: All cdl file data should be set back to zeros.");
+		}
+
+		TEST_METHOD(LoadCdlFile_AutoResetCdl_False_CRC_Match_Loads_Data)
+		{
+			constexpr uint32_t memSize = 0x100;
+			constexpr uint32_t romCrc = 0x11111111;
+			TempFile testFile("load_crc_match_no_reset.cdl");
+			constexpr bool AutoResetCdl = false;
+
+			TestLogger logger(memSize, romCrc);
+			logger.MarkBytesAs(0, 10, CdlFlags::Code);
+			logger.MarkBytesAs(11, 20, CdlFlags::Data);
+			Assert::IsTrue(logger.SaveCdlFile(testFile), L"Failed to save CDL file");
+
+			TestLogger reader(memSize, romCrc);
+			Assert::IsTrue(reader.LoadCdlFile(testFile, AutoResetCdl), L"Failed to load CDL file");
+			AssertRange(reader, 0, 10, CdlFlags::Code, L"Range 0-10 should be Code");
+			AssertRange(reader, 11, 20, CdlFlags::Data, L"Range 11-20 should be Data");
+		}
+
+		TEST_METHOD(LoadCdlFile_AutoResetCdl_True_CRC_Match_Loads_Data)
+		{
+			constexpr uint32_t memSize = 0x100;
+			constexpr uint32_t romCrc = 0x11111111;
+			TempFile testFile("load_crc_match_with_reset.cdl");
+			constexpr bool AutoResetCdl = true;
+
+			TestLogger logger(memSize, romCrc);
+			logger.MarkBytesAs(0, 10, CdlFlags::Code);
+			logger.MarkBytesAs(11, 20, CdlFlags::Data);
+			Assert::IsTrue(logger.SaveCdlFile(testFile), L"Failed to save CDL file");
+
+			TestLogger reader(memSize, romCrc);
+			Assert::IsTrue(reader.LoadCdlFile(testFile, AutoResetCdl), L"Failed to load CDL file");
+			AssertRange(reader, 0, 10, CdlFlags::Code, L"Range 0-10 should be Code");
+			AssertRange(reader, 11, 20, CdlFlags::Data, L"Range 11-20 should be Data");
+		}
+
+		TEST_METHOD(LoadCdlFile_AutoResetCdl_False_CRC_Mismatch_Loads_Data)
+		{
+			constexpr uint32_t memSize = 0x100;
+			constexpr uint32_t romCrc = 0x11111111;
+			TempFile testFile("load_crc_bad_no_reset.cdl");
+			constexpr bool AutoResetCdl = false;
+
+			TestLogger logger(memSize, romCrc);
+			logger.MarkBytesAs(0, 10, CdlFlags::Code);
+			logger.MarkBytesAs(11, 20, CdlFlags::Data);
+			Assert::IsTrue(logger.SaveCdlFile(testFile), L"Failed to save CDL file");
+
+			constexpr uint32_t badCrc = 0x0BAD0BAD;
+			TestLogger reader(memSize, badCrc);
+			Assert::IsTrue(reader.LoadCdlFile(testFile, AutoResetCdl), L"Failed to load CDL file");
+			AssertRange(reader, 0, 10, CdlFlags::Code, L"Range 0-10 should be Code");
+			AssertRange(reader, 11, 20, CdlFlags::Data, L"Range 11-20 should be Data");
+		}
+
+		TEST_METHOD(LoadCdlFile_AutoResetCdl_True_CRC_Mismatch_Zeros_Data)
+		{
+			constexpr uint32_t memSize = 0x100;
+			constexpr uint32_t romCrc = 0x11111111;
+			TempFile testFile("load_crc_bad_with_reset.cdl");
+			constexpr bool AutoResetCdl = true;
+
+			TestLogger logger(memSize, romCrc);
+			logger.MarkBytesAs(0, 10, CdlFlags::Code);
+			logger.MarkBytesAs(11, 20, CdlFlags::Data);
+			Assert::IsTrue(logger.SaveCdlFile(testFile), L"Failed to save CDL file");
+
+			constexpr uint32_t badCrc = 0x0BAD0BAD;
+			TestLogger reader(memSize, badCrc);
+			Assert::IsFalse(reader.LoadCdlFile(testFile, AutoResetCdl), L"LoadCdlFile() should return false");
+
+			AssertRange(reader, 0, memSize - 1, 0, L"CRC Mismatch and AudoReset True: All cdl file data should be set back to zeros.");
+		}
+
+		TEST_METHOD(LoadCdlFile_Legacy_Format_Loads)
+		{
+			constexpr uint32_t memSize = 0x100;
+			TestLogger logger(memSize, 0x11111111);
+			TempFile testFile("legacy.cdl");
+
+			// Create a file with no header, just raw data
+			{
+				ofstream outFile(testFile, std::ios::binary);
+				vector<uint8_t> rawData(memSize, 0xCC);
+				outFile.write((char*)rawData.data(), memSize);
+				outFile.close();
+			}
+
+			Assert::IsTrue(logger.LoadCdlFile(testFile, true), L"Could not load legacy cdl file");
+			Assert::AreEqual((uint8_t)0xCC, logger.GetRawData()[0], L"Legacy data mismatch");
 		}
 
 		TEST_METHOD(MarkBytesAs_End_Greater_Than_Memsize_Clamps)
