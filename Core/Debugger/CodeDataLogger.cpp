@@ -216,6 +216,10 @@ void CodeDataLogger::MarkBytesAs(uint32_t start, uint32_t end, uint8_t flags)
 
 void CodeDataLogger::StripData(uint8_t* romBuffer, CdlStripOption flag)
 {
+	if(!romBuffer) {
+		return;
+	}
+
 	if(flag == CdlStripOption::StripUnused) {
 		for(uint32_t i = 0; i < _memSize; i++) {
 			if(_cdlData[i] == 0) {

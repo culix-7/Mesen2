@@ -222,5 +222,11 @@ namespace Test_Debugger
 			logger.SetCdlData(nullptr, 1);
 			Assert::IsTrue(true, L"SetCdlData did not crash.");
 		}
+		TEST_METHOD(StripData_Null_Rombuffer_Does_Not_Crash)
+		{
+			TestLogger logger(0x100);
+			logger.StripData(nullptr, CdlStripOption::StripUnused);
+			Assert::IsTrue(true, L"StripData did not crash.");
+		}
 	};
 }
