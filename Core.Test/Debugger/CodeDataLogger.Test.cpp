@@ -20,6 +20,7 @@ namespace Test_Debugger
 			: CodeDataLogger(nullptr, MemoryType::SnesPrgRom, memSize, CpuType::Snes, romCrc)
 		{
 		}
+		static const uint32_t PublicHeaderSize = HeaderSize;
 	};
 
 	TEST_CLASS(Test_CodeDataLogger)
@@ -344,6 +345,40 @@ namespace Test_Debugger
 			Assert::AreEqual((uint8_t)CdlFlags::Code, logger.GetFlags(start), L"Start of buffer should be marked safely");
 			Assert::AreEqual((uint8_t)CdlFlags::Code, logger.GetFlags(memSize - 1), L"End of buffer should be marked safely");
 			Assert::AreEqual((uint8_t)0, logger.GetFlags(memSize), L"Data past end should not be modified");
+		}
+
+		TEST_METHOD(SaveCdlFile_Writes_Expected_Format)
+		{
+			constexpr uint32_t memSize = 0x10;
+			constexpr uint32_t romCrc = 0x11111111;
+			TempFile testFile("save_test.cdl");
+
+			TestLogger logger(memSize, romCrc);
+			logger.MarkBytesAs(0, 0x07, CdlFlags::Code);
+			logger.MarkBytesAs(0x08, 0x0F, CdlFlags::Data);
+			Assert::IsTrue(logger.SaveCdlFile(testFile), L"SaveCdlFile returned false");
+
+			std::ifstream inFile(testFile, std::ios::binary);
+			std::vector<uint8_t> readData((std::istreambuf_iterator<char>(inFile)), std::istreambuf_iterator<char>());
+			inFile.close();
+
+			constexpr size_t expectedSize = TestLogger::PublicHeaderSize + memSize;
+			Assert::AreEqual(expectedSize, readData.size(), L"Saved file size mismatch");
+
+			Assert::AreEqual(0, memcmp(readData.data(), "CDLv2", 5), L"Header mismatch");
+
+			const uint32_t savedCrc = readData[5] |
+				(readData[6] << 8) |
+				(readData[7] << 16) |
+				(readData[8] << 24);
+
+			Assert::AreEqual(romCrc, savedCrc, L"CRC32 in file mismatch");
+
+			const uint8_t* actualData = logger.GetRawData();
+			for(uint32_t i = 0; i < memSize; i++) {
+				Assert::AreEqual(actualData[i], readData[TestLogger::PublicHeaderSize + i],
+					L"Payload data mismatch at index");
+			}
 		}
 
 		TEST_METHOD(SetCdlData_Length_Greater_Than_Memsize_Does_Not_Crash)
