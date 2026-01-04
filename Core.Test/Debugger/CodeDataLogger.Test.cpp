@@ -188,6 +188,31 @@ namespace Test_Debugger
 			Assert::AreEqual(memSize, stats.TotalBytes, L"Total bytes incorrect");
 		}
 
+		TEST_METHOD(Integration_MarkBytes_Then_SaveFile_Then_LoadFile_Works)
+		{
+			constexpr uint32_t memSize = 0x10;
+			constexpr uint32_t romCrc = 0x11111111;
+			TempFile testFile("integration.cdl");
+			TestLogger logger(memSize, romCrc);
+
+			logger.MarkBytesAs(0, 0, CdlFlags::Code);
+			logger.MarkBytesAs(1, 1, CdlFlags::Data);
+			logger.MarkBytesAs(2, 2, CdlFlags::JumpTarget);
+			logger.MarkBytesAs(3, 3, CdlFlags::SubEntryPoint);
+			logger.MarkBytesAs(4, 4, CdlFlags::Code | CdlFlags::JumpTarget);
+
+			Assert::IsTrue(logger.SaveCdlFile(testFile), L"Could not save file");
+
+			TestLogger reader(memSize, romCrc);
+			Assert::IsTrue(reader.LoadCdlFile(testFile, true), L"Could not read file");
+
+			Assert::IsTrue(reader.IsCode(0), L"Flag lost: Code");
+			Assert::IsTrue(reader.IsData(1), L"Flag lost: Data");
+			Assert::IsTrue(reader.IsJumpTarget(2), L"Flag lost: JumpTarget");
+			Assert::IsTrue(reader.IsSubEntryPoint(3), L"Flag lost: SubEntryPoint");
+			Assert::AreEqual((uint8_t)(CdlFlags::Code | CdlFlags::JumpTarget), reader.GetFlags(4), L"Combined flags mismatch");
+		}
+
 		TEST_METHOD(IsCode_Addr_Outside_Memsize_Clamps)
 		{
 			constexpr uint32_t memSize = 0x100;
