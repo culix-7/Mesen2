@@ -1,5 +1,3 @@
 #pragma once
 
-#include "CppUnitTest.h"
-
-#include <algorithm>
+#include "ProjectTestSetup.h"

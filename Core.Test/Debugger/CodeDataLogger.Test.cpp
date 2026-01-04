@@ -1,15 +1,13 @@
 #include "pch.h"
+#include "ProjectTestSetup.h"
 #include "Debugger/CodeDataLogger.h"
 #include "Debugger/Debugger.h"
 #include "TestUtil/TempFile.h"
-
-#include "CppUnitTest.h"
 
 #include <algorithm>
 #include <fstream>
 #include <vector>
 
-using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
 namespace Test_Debugger
 {
