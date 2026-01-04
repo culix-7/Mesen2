@@ -70,7 +70,7 @@ bool CodeDataLogger::LoadCdlFile(string cdlFilepath, bool autoResetCdl)
 		if(fileSize >= _memSize && fileSize >= CodeDataLogger::HeaderSize) {
 			Reset();
 
-			if(memcmp(cdlData.data(), "CDLv2", 5) == 0) {
+			if(memcmp(cdlData.data(), CodeDataLogger::CdlHeader.data(), CodeDataLogger::CdlHeader.length()) == 0) {
 				uint32_t savedCrc = cdlData[5] | (cdlData[6] << 8) | (cdlData[7] << 16) | (cdlData[8] << 24);
 				if((!autoResetCdl || savedCrc == _romCrc32) && fileSize >= _memSize + CodeDataLogger::HeaderSize) {
 					memcpy(_cdlData, cdlData.data() + CodeDataLogger::HeaderSize, _memSize);
@@ -94,7 +94,7 @@ bool CodeDataLogger::SaveCdlFile(string cdlFilepath)
 {
 	ofstream cdlFile(cdlFilepath, ios::out | ios::binary);
 	if(cdlFile) {
-		cdlFile.write("CDLv2", 5);
+		cdlFile.write(CodeDataLogger::CdlHeader.data(), CodeDataLogger::CdlHeader.length());
 		cdlFile.put(_romCrc32 & 0xFF);
 		cdlFile.put((_romCrc32 >> 8) & 0xFF);
 		cdlFile.put((_romCrc32 >> 16) & 0xFF);

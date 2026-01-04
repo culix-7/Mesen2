@@ -20,7 +20,9 @@ namespace Test_Debugger
 			: CodeDataLogger(nullptr, MemoryType::SnesPrgRom, memSize, CpuType::Snes, romCrc)
 		{
 		}
+
 		static const uint32_t PublicHeaderSize = HeaderSize;
+		static constexpr std::string_view PublicHeader = CdlHeader;
 	};
 
 	TEST_CLASS(Test_CodeDataLogger)
@@ -55,6 +57,7 @@ namespace Test_Debugger
 			TestLogger logger(0x100);
 			Assert::IsNotNull(logger.GetRawData(), L"Raw data buffer should be allocated even with null debugger");
 		}
+
 		TEST_METHOD(GetCdlData_Destination_Null_Pointer_Does_Not_Crash)
 		{
 			constexpr uint32_t memSize = 0x100;
@@ -390,7 +393,7 @@ namespace Test_Debugger
 			constexpr size_t expectedSize = TestLogger::PublicHeaderSize + memSize;
 			Assert::AreEqual(expectedSize, readData.size(), L"Saved file size mismatch");
 
-			Assert::AreEqual(0, memcmp(readData.data(), "CDLv2", 5), L"Header mismatch");
+			Assert::AreEqual(0, memcmp(readData.data(), TestLogger::PublicHeader.data(), TestLogger::PublicHeader.length()), L"Header mismatch");
 
 			const uint32_t savedCrc = readData[5] |
 				(readData[6] << 8) |
