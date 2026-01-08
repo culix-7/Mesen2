@@ -247,24 +247,55 @@ clean:
 	rm -r -f $(DLLOBJ)
 
 
-.PHONY: test-all-configs test-env
-test-all-configs:
-	@echo "Validating makefile architecture detection:"
-	@echo "----------------------------------------------------------------------------------------------------------"
-	@printf "%-15s | %-25s | %-25s | %-10s\n" "INPUT" "EXPECTED (PLAT/FLAGS)" "ACTUAL (PLAT/FLAGS)" "RESULT"
-	@echo "----------------------------------------------------------------------------------------------------------"
-	@$(MAKE) --no-print-directory test-env UNAME_S=Linux  MACHINE=x86_64     E_PLAT=linux-x64   E_FLAGS="-m64"
-	@$(MAKE) --no-print-directory test-env UNAME_S=Linux  MACHINE=aarch64    E_PLAT=linux-arm64 E_FLAGS=""      USE_GCC=true
-	@$(MAKE) --no-print-directory test-env UNAME_S=Darwin MACHINE=x86_64     E_PLAT=osx-x64     E_FLAGS="-m64"
-	@$(MAKE) --no-print-directory test-env UNAME_S=Darwin MACHINE=arm64      E_PLAT=osx-arm64   E_FLAGS="-m64"
-	@$(MAKE) --no-print-directory test-env UNAME_S=Darwin MACHINE=aarch64    E_PLAT=osx-arm64   E_FLAGS="-m64"
-	@echo "----------------------------------------------------------------------------------------------------------"
+# --- Environment Reporting & Validation ---
 
-test-env:
-	$(eval ACTUAL_FLAGS := $(filter -m64,$(MESENFLAGS)))
-	$(eval PASS := $(shell [ "$(MESENPLATFORM)" = "$(E_PLAT)" ] && [ "$(ACTUAL_FLAGS)" = "$(E_FLAGS)" ] && echo "PASS" || echo "FAIL"))
-	@printf "%-15s | %-13s %-11s | %-13s %-11s | %-10s\n" \
+# Shared format for the table rows
+PRINT_FORMAT := "%-15s | %-13s %-11s | %-13s %-11s | %-10s\n"
+
+.PHONY: verify-env verify-all-env test-env-row
+
+# Hide the "make[1]: Entering directory..." noise
+.SILENT: test-env-row
+
+# Target for CI: verify the current machine's environment
+verify-env:
+	@echo "Checking Build Environment..."
+	@printf $(PRINT_FORMAT) "INPUT" "EXPECTED" "" "ACTUAL" "" "RESULT"
+	@$(MAKE) --no-print-directory test-env-row \
+		E_PLAT="$(MESENPLATFORM)" \
+		E_FLAGS="$(filter -m64,$(MESENFLAGS))"
+
+verify-all-env:
+	@rm -f .test_failed
+	@echo "Validating Makefile Architecture Detection Logic:"
+	@echo "----------------------------------------------------------------------------------------------------------"
+	@printf $(PRINT_FORMAT) "INPUT" "EXPECTED (PLAT/FLAGS)" "" "ACTUAL (PLAT/FLAGS)" "" "RESULT"
+	@echo "----------------------------------------------------------------------------------------------------------"
+	@$(MAKE) --no-print-directory test-env-row UNAME_S=Linux  MACHINE=x86_64     E_PLAT=linux-x64   E_FLAGS="-m64" || touch .test_failed
+	@$(MAKE) --no-print-directory test-env-row UNAME_S=Linux  MACHINE=aarch64    E_PLAT=linux-arm64 E_FLAGS=""      USE_GCC=true || touch .test_failed
+	@$(MAKE) --no-print-directory test-env-row UNAME_S=Darwin MACHINE=x86_64     E_PLAT=osx-x64     E_FLAGS="-m64" || touch .test_failed
+	@$(MAKE) --no-print-directory test-env-row UNAME_S=Darwin MACHINE=arm64      E_PLAT=osx-arm64   E_FLAGS="-m64" || touch .test_failed
+	@$(MAKE) --no-print-directory test-env-row UNAME_S=Darwin MACHINE=aarch64    E_PLAT=osx-arm64   E_FLAGS="-m64" || touch .test_failed
+	@echo "----------------------------------------------------------------------------------------------------------"
+	@if [ -f .test_failed ]; then \
+		rm .test_failed; \
+		echo "Verification FAILED!"; \
+		exit 1; \
+	else \
+		echo "Verification Complete. All tests PASSED."; \
+	fi
+
+test-env-row:
+	$(eval ACTUAL_FLAGS := $(strip $(filter -m64,$(MESENFLAGS))))
+	$(eval EXP_FLAGS := $(strip $(E_FLAGS)))
+	$(eval PLAT_MATCH := $(if $(filter $(E_PLAT),$(MESENPLATFORM)),OK,FAIL))
+	$(eval FLAG_MATCH := $(if $(subst $(EXP_FLAGS),,$(ACTUAL_FLAGS))$(subst $(ACTUAL_FLAGS),,$(EXP_FLAGS)),FAIL,OK))
+	$(eval PASS := $(if $(filter OKOK,$(PLAT_MATCH)$(FLAG_MATCH)),PASS,FAIL))
+	@printf $(PRINT_FORMAT) \
 		"$(UNAME_S)-$(MACHINE)" \
-		"$(E_PLAT)" "$(E_FLAGS)" \
+		"$(E_PLAT)" "$(EXP_FLAGS)" \
 		"$(MESENPLATFORM)" "$(ACTUAL_FLAGS)" \
 		"$(PASS)"
+	@# Return a non-zero exit code ONLY so verify-all-env can catch it with ||
+	@if [ "$(PASS)" = "FAIL" ]; then exit 1; fi
+
