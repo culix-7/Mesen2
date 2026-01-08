@@ -204,8 +204,8 @@ ui: InteropDLL/$(OBJFOLDER)/$(SHAREDLIB)
 	cp InteropDLL/$(OBJFOLDER)/$(SHAREDLIB) $(OUTFOLDER)/$(SHAREDLIB)
 	#Called twice because the first call copies native libraries to the bin folder which need to be included in Dependencies.zip
 	#Don't run with AOT flags the first time to reduce build duration
-	cd UI && dotnet publish -c $(BUILD_TYPE) $(OPTIMIZEUI) -r $(MESENPLATFORM)
-	cd UI && dotnet publish -c $(BUILD_TYPE) $(OPTIMIZEUI) $(PUBLISHFLAGS)
+	dotnet publish UI/UI.csproj -c $(BUILD_TYPE) $(OPTIMIZEUI) -r $(MESENPLATFORM)
+	dotnet publish UI/UI.csproj -c $(BUILD_TYPE) $(OPTIMIZEUI) $(PUBLISHFLAGS)
 
 core: InteropDLL/$(OBJFOLDER)/$(SHAREDLIB)
 
