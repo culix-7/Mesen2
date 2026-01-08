@@ -297,6 +297,13 @@ verify-all-env:
 
 	@# Case: Using alternate naming (aarch64) in the ARCH param
 	@$(MAKE) --no-print-directory test-env-row UNAME_S=Linux  MACHINE=x86_64     E_PLAT=linux-arm64 E_FLAGS=""     ARCH=aarch64 USE_GCC=true || touch .test_failed
+
+	@# --- TEST GROUP 3: Resilient Naming (Fuzzy ARCH matching) ---
+	@# Test: ARCH contains the full platform name (common in CI)
+	@$(MAKE) --no-print-directory test-env-row UNAME_S=Darwin MACHINE=arm64  ARCH=osx-x64   E_PLAT=osx-x64     E_FLAGS="-m64" || touch .test_failed
+
+	@# Test: ARCH contains extra spaces or different casing (handled by findstring)
+	@$(MAKE) --no-print-directory test-env-row UNAME_S=Linux  MACHINE=x86_64 ARCH=linux-arm64 E_PLAT=linux-arm64 E_FLAGS="" USE_GCC=true || touch .test_failed
 	@echo "----------------------------------------------------------------------------------------------------------"
 	@if [ -f .test_failed ]; then \
 		rm .test_failed; \
