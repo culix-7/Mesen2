@@ -25,7 +25,10 @@ LINKCHECKUNRESOLVED := -Wl,-z,defs
 
 LINKOPTIONS :=
 MESENOS :=
-UNAME_S := $(shell uname -s)
+
+# Use ?= so we can override these during testing
+UNAME_S ?= $(shell uname -s)
+MACHINE ?= $(shell uname -m)
 
 ifeq ($(UNAME_S),Linux)
 	MESENOS := linux
@@ -42,14 +45,12 @@ endif
 
 MESENFLAGS += -m64
 
-MACHINE := $(shell uname -m)
 ifeq ($(MACHINE),x86_64)
 	MESENPLATFORM := $(MESENOS)-x64
 endif
 ifneq ($(filter %86,$(MACHINE)),)
 	MESENPLATFORM := $(MESENOS)-x64
 endif
-# TODO: this returns `aarch64` on one of my machines...
 ifneq ($(filter arm%,$(MACHINE)),)
 	MESENPLATFORM := $(MESENOS)-arm64
 endif
@@ -57,7 +58,7 @@ ifeq ($(MACHINE),aarch64)
 	MESENPLATFORM := $(MESENOS)-arm64
 	ifeq ($(USE_GCC),true)
 		#don't set -m64 on arm64 for gcc (unrecognized option)
-		MESENFLAGS=
+		MESENFLAGS := $(filter-out -m64,$(MESENFLAGS))
 	endif
 endif
 
@@ -248,20 +249,22 @@ clean:
 
 .PHONY: test-all-configs test-env
 test-all-configs:
-	@echo "Checking Makefile architecture detection logic..."
-	@echo "------------------------------------------------"
-	@$(MAKE) --no-print-directory test-env UNAME_S=Linux MACHINE=x86_64
-	@$(MAKE) --no-print-directory test-env UNAME_S=Linux MACHINE=aarch64
-	@$(MAKE) --no-print-directory test-env UNAME_S=Darwin MACHINE=x86_64
-	@$(MAKE) --no-print-directory test-env UNAME_S=Darwin MACHINE=arm64
-	@$(MAKE) --no-print-directory test-env UNAME_S=Darwin MACHINE=aarch64
-	@echo "------------------------------------------------"
-	@echo "Verification Complete."
+	@echo "Validating makefile architecture detection:"
+	@echo "----------------------------------------------------------------------------------------------------------"
+	@printf "%-15s | %-25s | %-25s | %-10s\n" "INPUT" "EXPECTED (PLAT/FLAGS)" "ACTUAL (PLAT/FLAGS)" "RESULT"
+	@echo "----------------------------------------------------------------------------------------------------------"
+	@$(MAKE) --no-print-directory test-env UNAME_S=Linux  MACHINE=x86_64     E_PLAT=linux-x64   E_FLAGS="-m64"
+	@$(MAKE) --no-print-directory test-env UNAME_S=Linux  MACHINE=aarch64    E_PLAT=linux-arm64 E_FLAGS=""      USE_GCC=true
+	@$(MAKE) --no-print-directory test-env UNAME_S=Darwin MACHINE=x86_64     E_PLAT=osx-x64     E_FLAGS="-m64"
+	@$(MAKE) --no-print-directory test-env UNAME_S=Darwin MACHINE=arm64      E_PLAT=osx-arm64   E_FLAGS="-m64"
+	@$(MAKE) --no-print-directory test-env UNAME_S=Darwin MACHINE=aarch64    E_PLAT=osx-arm64   E_FLAGS="-m64"
+	@echo "----------------------------------------------------------------------------------------------------------"
 
-# We define the logic again here for the test because top-level variables are already evaluated.
 test-env:
-	$(eval TEST_OS := $(if $(filter Darwin,$(UNAME_S)),osx,linux))
-	$(eval TEST_PLAT := $(if $(filter x86_64 %86,$(MACHINE)),$(TEST_OS)-x64,$(TEST_OS)-arm64))
-	$(eval TEST_FLAGS := $(if $(filter Darwin,$(UNAME_S)),-m64,$(if $(filter aarch64,$(MACHINE)),,-m64)))
-	@printf "Input: %-15s | Expected Platform: %-12s | Expected Arch Flag: %s\n" \
-		"$(UNAME_S)-$(MACHINE)" "$(TEST_PLAT)" "$(filter -m64,$(TEST_FLAGS))"
+	$(eval ACTUAL_FLAGS := $(filter -m64,$(MESENFLAGS)))
+	$(eval PASS := $(shell [ "$(MESENPLATFORM)" = "$(E_PLAT)" ] && [ "$(ACTUAL_FLAGS)" = "$(E_FLAGS)" ] && echo "PASS" || echo "FAIL"))
+	@printf "%-15s | %-13s %-11s | %-13s %-11s | %-10s\n" \
+		"$(UNAME_S)-$(MACHINE)" \
+		"$(E_PLAT)" "$(E_FLAGS)" \
+		"$(MESENPLATFORM)" "$(ACTUAL_FLAGS)" \
+		"$(PASS)"
