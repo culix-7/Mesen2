@@ -202,6 +202,7 @@ ui: InteropDLL/$(OBJFOLDER)/$(SHAREDLIB)
 	mkdir -p $(OUTFOLDER)/Dependencies
 	rm -fr $(OUTFOLDER)/Dependencies/*
 	cp InteropDLL/$(OBJFOLDER)/$(SHAREDLIB) $(OUTFOLDER)/$(SHAREDLIB)
+	chmod +x UI/prebuild_linux_mac.sh
 	#Called twice because the first call copies native libraries to the bin folder which need to be included in Dependencies.zip
 	#Don't run with AOT flags the first time to reduce build duration
 	dotnet publish UI/UI.csproj -c $(BUILD_TYPE) $(OPTIMIZEUI) -r $(MESENPLATFORM)
