@@ -260,9 +260,10 @@ PRINT_FORMAT := "%-15s | %-13s %-11s | %-13s %-11s | %-10s\n"
 # Target for CI: verify the current machine's environment
 verify-env:
 	@echo "Checking Build Environment..."
-	@printf $(PRINT_FORMAT) "INPUT" "EXPECTED" "" "ACTUAL" "" "RESULT"
+	@printf $(PRINT_FORMAT) "INPUT" "MATRIX_REQ" "" "ACTUAL" "" "RESULT"
+	# compare what the matrix requested (REQ_PLAT) vs what the Makefile found (MESENPLATFORM)
 	@$(MAKE) --no-print-directory test-env-row \
-		E_PLAT="$(MESENPLATFORM)" \
+		E_PLAT="$(if $(REQ_PLAT),$(REQ_PLAT),$(MESENPLATFORM))" \
 		E_FLAGS="$(filter -m64,$(MESENFLAGS))"
 
 verify-all-env:
