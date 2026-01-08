@@ -30,6 +30,14 @@ MESENOS :=
 UNAME_S ?= $(shell uname -s)
 MACHINE ?= $(shell uname -m)
 
+ifneq ($(ARCH),)
+	ifeq ($(filter x64 x86_64,$(ARCH)),$(ARCH))
+		override MACHINE := x86_64
+	else ifeq ($(filter arm64 aarch64,$(ARCH)),$(ARCH))
+		override MACHINE := aarch64
+	endif
+endif
+
 ifeq ($(UNAME_S),Linux)
 	MESENOS := linux
 	SHAREDLIB := MesenCore.so
