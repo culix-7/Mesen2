@@ -245,7 +245,7 @@ jobs:
       - name: Zip Mesen.app
         run: |
           # Find the Mesen.app folder regardless of exactly which subfolder it landed in
-          APP_PATH=$(find bin/osx-${{ matrix.platform.arch }} -name "Mesen.app" -type d | head -n 1)
+          APP_PATH=$(find bin -name "Mesen.app" -type d | head -n 1)
 
           if [ -z "$APP_PATH" ]; then
             echo "::error::Could not find Mesen.app in bin directory!"
