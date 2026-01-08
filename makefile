@@ -244,3 +244,24 @@ clean:
 	rm -r -f $(LUAOBJ)
 	rm -r -f $(MACOSOBJ)
 	rm -r -f $(DLLOBJ)
+
+
+.PHONY: test-all-configs test-env
+test-all-configs:
+	@echo "Checking Makefile architecture detection logic..."
+	@echo "------------------------------------------------"
+	@$(MAKE) --no-print-directory test-env UNAME_S=Linux MACHINE=x86_64
+	@$(MAKE) --no-print-directory test-env UNAME_S=Linux MACHINE=aarch64
+	@$(MAKE) --no-print-directory test-env UNAME_S=Darwin MACHINE=x86_64
+	@$(MAKE) --no-print-directory test-env UNAME_S=Darwin MACHINE=arm64
+	@$(MAKE) --no-print-directory test-env UNAME_S=Darwin MACHINE=aarch64
+	@echo "------------------------------------------------"
+	@echo "Verification Complete."
+
+# We define the logic again here for the test because top-level variables are already evaluated.
+test-env:
+	$(eval TEST_OS := $(if $(filter Darwin,$(UNAME_S)),osx,linux))
+	$(eval TEST_PLAT := $(if $(filter x86_64 %86,$(MACHINE)),$(TEST_OS)-x64,$(TEST_OS)-arm64))
+	$(eval TEST_FLAGS := $(if $(filter Darwin,$(UNAME_S)),-m64,$(if $(filter aarch64,$(MACHINE)),,-m64)))
+	@printf "Input: %-15s | Expected Platform: %-12s | Expected Arch Flag: %s\n" \
+		"$(UNAME_S)-$(MACHINE)" "$(TEST_PLAT)" "$(filter -m64,$(TEST_FLAGS))"
