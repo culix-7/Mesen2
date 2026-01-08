@@ -31,9 +31,10 @@ UNAME_S ?= $(shell uname -s)
 MACHINE ?= $(shell uname -m)
 
 ifneq ($(ARCH),)
-	ifeq ($(filter x64 x86_64,$(ARCH)),$(ARCH))
+	ifneq (,$(findstring x64,$(ARCH))$(findstring x86_64,$(ARCH)))
 		override MACHINE := x86_64
-	else ifeq ($(filter arm64 aarch64,$(ARCH)),$(ARCH))
+	endif
+	ifneq (,$(findstring arm64,$(ARCH))$(findstring aarch64,$(ARCH)))
 		override MACHINE := aarch64
 	endif
 endif
