@@ -290,13 +290,13 @@ verify-all-env:
 	@# --- TEST GROUP 2: Explicit Overrides (With ARCH param) ---
 	@# These prove the Makefile correctly ignores the hardware when told to
 	@# Case: On x86_64 hardware, but ARCH says arm64
-	@$(MAKE) --no-print-directory test-env-row UNAME_S=Linux  MACHINE=x86_64 ARCH=arm64 E_PLAT=linux-arm64 E_FLAGS="" USE_GCC=true || touch .test_failed
+	@$(MAKE) --no-print-directory test-env-row UNAME_S=Linux  MACHINE=x86_64     E_PLAT=linux-arm64 E_FLAGS=""     ARCH=arm64 USE_GCC=true || touch .test_failed
 
 	@# Case: On ARM64 hardware, but ARCH says x64
-	@$(MAKE) --no-print-directory test-env-row UNAME_S=Darwin MACHINE=arm64  ARCH=x64   E_PLAT=osx-x64     E_FLAGS="-m64" || touch .test_failed
+	@$(MAKE) --no-print-directory test-env-row UNAME_S=Darwin MACHINE=arm64      E_PLAT=osx-x64     E_FLAGS="-m64" ARCH=x64 || touch .test_failed
 
 	@# Case: Using alternate naming (aarch64) in the ARCH param
-	@$(MAKE) --no-print-directory test-env-row UNAME_S=Linux  MACHINE=x86_64 ARCH=aarch64 E_PLAT=linux-arm64 E_FLAGS="" USE_GCC=true || touch .test_failed
+	@$(MAKE) --no-print-directory test-env-row UNAME_S=Linux  MACHINE=x86_64     E_PLAT=linux-arm64 E_FLAGS=""     ARCH=aarch64 USE_GCC=true || touch .test_failed
 	@echo "----------------------------------------------------------------------------------------------------------"
 	@if [ -f .test_failed ]; then \
 		rm .test_failed; \
