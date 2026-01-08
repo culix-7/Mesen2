@@ -272,13 +272,23 @@ verify-all-env:
 	@echo "----------------------------------------------------------------------------------------------------------"
 	@printf $(PRINT_FORMAT) "INPUT" "EXPECTED (PLAT/FLAGS)" "" "ACTUAL (PLAT/FLAGS)" "" "RESULT"
 	@echo "----------------------------------------------------------------------------------------------------------"
+	@# --- TEST GROUP 1: Auto-Detection (No ARCH param) ---
+	@# These prove the Makefile works out-of-the-box on different hardware
 	@$(MAKE) --no-print-directory test-env-row UNAME_S=Linux  MACHINE=x86_64     E_PLAT=linux-x64   E_FLAGS="-m64" || touch .test_failed
 	@$(MAKE) --no-print-directory test-env-row UNAME_S=Linux  MACHINE=aarch64    E_PLAT=linux-arm64 E_FLAGS=""      USE_GCC=true || touch .test_failed
-	@$(MAKE) --no-print-directory test-env-row UNAME_S=Linux  MACHINE=x86_64     E_PLAT=linux-arm64 E_FLAGS="" USE_GCC=true || touch .test_failed
 	@$(MAKE) --no-print-directory test-env-row UNAME_S=Darwin MACHINE=x86_64     E_PLAT=osx-x64     E_FLAGS="-m64" || touch .test_failed
 	@$(MAKE) --no-print-directory test-env-row UNAME_S=Darwin MACHINE=arm64      E_PLAT=osx-arm64   E_FLAGS="-m64" || touch .test_failed
-	@$(MAKE) --no-print-directory test-env-row UNAME_S=Darwin MACHINE=aarch64    E_PLAT=osx-arm64   E_FLAGS="-m64" || touch .test_failed
-	@$(MAKE) --no-print-directory test-env-row UNAME_S=Darwin MACHINE=arm64      E_PLAT=osx-x64     E_FLAGS="-m64" || touch .test_failed
+
+	@# --- TEST GROUP 2: Explicit Overrides (With ARCH param) ---
+	@# These prove the Makefile correctly ignores the hardware when told to
+	@# Case: On x86_64 hardware, but ARCH says arm64
+	@$(MAKE) --no-print-directory test-env-row UNAME_S=Linux  MACHINE=x86_64 ARCH=arm64 E_PLAT=linux-arm64 E_FLAGS="" USE_GCC=true || touch .test_failed
+
+	@# Case: On ARM64 hardware, but ARCH says x64
+	@$(MAKE) --no-print-directory test-env-row UNAME_S=Darwin MACHINE=arm64  ARCH=x64   E_PLAT=osx-x64     E_FLAGS="-m64" || touch .test_failed
+
+	@# Case: Using alternate naming (aarch64) in the ARCH param
+	@$(MAKE) --no-print-directory test-env-row UNAME_S=Linux  MACHINE=x86_64 ARCH=aarch64 E_PLAT=linux-arm64 E_FLAGS="" USE_GCC=true || touch .test_failed
 	@echo "----------------------------------------------------------------------------------------------------------"
 	@if [ -f .test_failed ]; then \
 		rm .test_failed; \
