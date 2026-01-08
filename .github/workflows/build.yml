@@ -236,7 +236,21 @@ jobs:
 
       - name: Zip Mesen.app
         run: |
-          ditto -c -k --sequesterRsrc --keepParent bin/osx-${{ matrix.platform.arch }}/Release/osx-${{ matrix.platform.arch }}/publish/Mesen.app bin/osx-${{ matrix.platform.arch }}/Release/Mesen.app.zip
+          # Find the Mesen.app folder regardless of exactly which subfolder it landed in
+          APP_PATH=$(find bin/osx-${{ matrix.platform.arch }} -name "Mesen.app" -type d | head -n 1)
+
+          if [ -z "$APP_PATH" ]; then
+            echo "::error::Could not find Mesen.app in bin directory!"
+            exit 1
+          fi
+
+          echo "Found app at: $APP_PATH"
+
+          # Create the destination directory if it doesn't exist
+          mkdir -p bin/osx-${{ matrix.platform.arch }}/Release/
+
+          # Zip it up
+          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" bin/osx-${{ matrix.platform.arch }}/Release/Mesen.app.zip
 
       - name: Upload Mesen
         uses: actions/upload-artifact@v4
