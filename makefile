@@ -273,9 +273,11 @@ verify-all-env:
 	@echo "----------------------------------------------------------------------------------------------------------"
 	@$(MAKE) --no-print-directory test-env-row UNAME_S=Linux  MACHINE=x86_64     E_PLAT=linux-x64   E_FLAGS="-m64" || touch .test_failed
 	@$(MAKE) --no-print-directory test-env-row UNAME_S=Linux  MACHINE=aarch64    E_PLAT=linux-arm64 E_FLAGS=""      USE_GCC=true || touch .test_failed
+	@$(MAKE) --no-print-directory test-env-row UNAME_S=Linux  MACHINE=x86_64     E_PLAT=linux-arm64 E_FLAGS="" USE_GCC=true || touch .test_failed
 	@$(MAKE) --no-print-directory test-env-row UNAME_S=Darwin MACHINE=x86_64     E_PLAT=osx-x64     E_FLAGS="-m64" || touch .test_failed
 	@$(MAKE) --no-print-directory test-env-row UNAME_S=Darwin MACHINE=arm64      E_PLAT=osx-arm64   E_FLAGS="-m64" || touch .test_failed
 	@$(MAKE) --no-print-directory test-env-row UNAME_S=Darwin MACHINE=aarch64    E_PLAT=osx-arm64   E_FLAGS="-m64" || touch .test_failed
+	@$(MAKE) --no-print-directory test-env-row UNAME_S=Darwin MACHINE=arm64      E_PLAT=osx-x64     E_FLAGS="-m64" || touch .test_failed
 	@echo "----------------------------------------------------------------------------------------------------------"
 	@if [ -f .test_failed ]; then \
 		rm .test_failed; \
