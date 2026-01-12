@@ -24,6 +24,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Verify Prebuild Script (Pester Tests)
+        shell: powershell
+        run: |
+          Invoke-Pester -Path "UI/tests/prebuild_windows.test.ps1" -Passthru | ForEach-Object { if ($_.FailedCount -gt 0) { exit 1 } }
+
       - name: Install .NET Core
         uses: actions/setup-dotnet@v4
         with:
