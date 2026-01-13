@@ -650,7 +650,9 @@
   </ItemGroup>
 
   <Target Name="PreBuildWindows" BeforeTargets="PreBuildEvent" Condition="'$(RuntimeIdentifier)'=='win-x64'">
-    <Exec Command="call &quot;$(ProjectDir)prebuild_windows.bat&quot; &quot;$(OutDir)&quot; &quot;$(RuntimeIdentifier)&quot; &quot;$(ProjectDir)&quot;" />
+    <Exec 
+    Command="powershell -ExecutionPolicy Bypass -File &quot;$(ProjectDir)prebuild_windows.ps1&quot; -OutDir &quot;$(ProjectDir)..\bin\$(RuntimeIdentifier)\$(Configuration)&quot; -ProjectDir &quot;$(ProjectDir.TrimEnd('\'))&quot; -RuntimeIdentifier &quot;$(RuntimeIdentifier)&quot;" 
+    WorkingDirectory="$(ProjectDir)" />
   </Target>
 
 	<Target Name="PreBuildLinux" BeforeTargets="PreBuildEvent" Condition="'$(RuntimeIdentifier)'=='linux-x64' Or '$(RuntimeIdentifier)'=='linux-arm64'">
