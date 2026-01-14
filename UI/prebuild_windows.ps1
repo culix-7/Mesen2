@@ -46,7 +46,7 @@ foreach ($Lib in $Libs) {
         Write-Host "[PREBUILD] Copying NuGet dll ($RuntimeIdentifier): $LibSourcePath"
         Copy-Item $LibSourcePath -Destination $DepsFolder
     } else {
-        throw "ERROR: Could not find $Lib for $RuntimeIdentifier in NuGet cache."
+        throw "ERROR: Could not find $Lib for $RuntimeIdentifier in NuGet cache '$LibSourcePath' "
     }
 }
 
