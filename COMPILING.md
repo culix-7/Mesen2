@@ -1,6 +1,8 @@
 ## Windows
 
 1) Open the solution in Visual Studio 2022
+    * Mesen uses the "Desktop Development With C++" workload and the ".NET Desktop Development" workload
+    * You do **not** need to install them in advance. If you don't have them, Visual Studio will install them when you open the project.
 2) Compile as `Release`/`x64`
 3) Set the startup project to the `UI` project and run
 
