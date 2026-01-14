@@ -14,8 +14,8 @@ Describe "Mesen Prebuild Logic Verification" {
         $script:OldProfile = $env:USERPROFILE
         $env:USERPROFILE = "T:\Users\testuser"
 
-		  $PREBUILD_SCRIPT = "$PSScriptRoot/../prebuild_windows.ps1"
-		  $RUNTIME_ID = "win-x64"
+        $PREBUILD_SCRIPT = "$PSScriptRoot/../prebuild_windows.ps1"
+        $RUNTIME_ID = "win-x64"
     }
 
     AfterAll {

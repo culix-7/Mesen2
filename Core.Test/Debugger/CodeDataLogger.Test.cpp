@@ -1,15 +1,13 @@
 #include "pch.h"
+#include "ProjectTestSetup.h"
 #include "Debugger/CodeDataLogger.h"
 #include "Debugger/Debugger.h"
 #include "TestUtil/TempFile.h"
-
-#include "CppUnitTest.h"
 
 #include <algorithm>
 #include <fstream>
 #include <vector>
 
-using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
 namespace Test_Debugger
 {
@@ -259,7 +257,7 @@ namespace Test_Debugger
 			TempFile testFile("too_small.cdl");
 
 			{
-				ofstream outFile(testFile, std::ios::binary | std::ios::trunc);
+				ofstream outFile(testFile.FilePath.string(), std::ios::binary | std::ios::trunc);
 				outFile.write("123", 3);
 				outFile.close();
 			}
@@ -350,7 +348,7 @@ namespace Test_Debugger
 
 			// Create a file with no header, just raw data
 			{
-				ofstream outFile(testFile, std::ios::binary);
+				ofstream outFile(std::string(testFile), std::ios::binary);
 				vector<uint8_t> rawData(memSize, 0xCC);
 				outFile.write((char*)rawData.data(), memSize);
 				outFile.close();

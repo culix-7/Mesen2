@@ -15,6 +15,7 @@
     <ClInclude Include="TestUtil\TempFile.h">
       <Filter>TestUtil</Filter>
     </ClInclude>
+    <ClInclude Include="ProjectTestSetup.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Debugger\CodeDataLogger.Test.cpp">

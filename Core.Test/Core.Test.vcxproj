@@ -26,6 +26,7 @@
     <ClCompile Include="TestUtil\TempFile.Test.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ProjectTestSetup.h" />
     <ClInclude Include="TestUtil\TempFile.h" />
   </ItemGroup>
   <ItemGroup>

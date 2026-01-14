@@ -15,11 +15,10 @@ jobs:
   windows:
     strategy:
       matrix:
-        platform: [
-          {netversion: 6.x, targetframework: net6.0, aot: false, singleFile: true, aotString: ""},
-          {netversion: 8.x, targetframework: net8.0, aot: false, singleFile: true, aotString: ""},
-          {netversion: 8.x, targetframework: net8.0, aot: true, singleFile: false, aotString: " - AoT"}
-        ]
+        platform:
+          - {netversion: 6.x, targetframework: net6.0, aot: false, singleFile: true, aotString: "", runTests: false}
+          - {netversion: 8.x, targetframework: net8.0, aot: false, singleFile: true, aotString: "", runTests: true}
+          - {netversion: 8.x, targetframework: net8.0, aot: true, singleFile: false, aotString: " - AoT", runTests: false}
       fail-fast: false
     runs-on: windows-latest
 
@@ -28,6 +27,11 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Setup MSBuild and VSTest
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
 
       - name: Verify Prebuild Script (Pester Tests)
         shell: powershell
@@ -39,11 +43,6 @@ jobs:
         with:
           dotnet-version: ${{ matrix.platform.netversion }}
 
-      - name: Setup MSBuild.exe
-        uses: microsoft/setup-msbuild@v2
-        with:
-          msbuild-architecture: x64
-
       - name: Restore packages
         run: dotnet restore -p:TargetFramework="${{ matrix.platform.targetframework }}" -r win-x64 -p:PublishAot="${{ matrix.platform.aot }}" -p:BuildWithNetFrameworkHostedCompiler=true
 
@@ -51,7 +50,24 @@ jobs:
         uses: ./.github/actions/build-sha1-action
 
       - name: Build Mesen
-        run: msbuild -nologo -v:d -clp:ForceConsoleColor -m -p:Configuration=Release -p:Platform=x64 -t:UI -p:TargetFramework="${{ matrix.platform.targetframework }}"
+        run: msbuild -nologo -v:m -clp:ForceConsoleColor -m -p:Configuration=Release -p:Platform=x64 -t:UI,Core_Test -p:TargetFramework="${{ matrix.platform.targetframework }}"
+
+      - name: "C++ Unit Tests (Windows)"
+        id: run_tests
+        if: ${{ matrix.platform.runTests }}
+        shell: pwsh
+        run: vstest.console.exe "bin\win-x64\Release\Core.Test.dll" /Platform:x64 /Parallel /logger:trx
+        # continue on error for now so we can display some test results
+        continue-on-error: true
+
+      - name: Show Test Results
+        if: ${{ matrix.platform.runTests }}
+        uses: dorny/test-reporter@v1
+        with:
+          name: "C++ Unit Tests (Windows)"
+          path: "TestResults/*.trx"
+          reporter: dotnet-trx
+          fail-on-error: 'true'
 
       - name: Publish Mesen
         run: dotnet publish UI/UI.csproj --no-restore -c Release -p:PublishAot="${{ matrix.platform.aot }}" -p:SelfContained="${{ matrix.platform.aot }}" -p:PublishSingleFile="${{ matrix.platform.singleFile }}" -p:OptimizeUi="true" -p:Platform="x64" -p:TargetFramework="${{ matrix.platform.targetframework }}" -r win-x64 /p:PublishProfile=Properties\PublishProfiles\Release.pubxml

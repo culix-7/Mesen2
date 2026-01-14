@@ -1,11 +1,11 @@
 #include "pch.h"
-#include <fstream>
-#include <filesystem>
-#include "CppUnitTest.h"
+#include "ProjectTestSetup.h"
 #include "TempFile.h"
 
+#include <fstream>
+#include <filesystem>
 
-using namespace Microsoft::VisualStudio::CppUnitTestFramework;
+
 namespace fs = std::filesystem;
 
 namespace Test_TestUtil
