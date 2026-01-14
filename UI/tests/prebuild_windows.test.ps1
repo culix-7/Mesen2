@@ -1,3 +1,5 @@
+# test that all needed scenarios of the prebuild_windows script work.
+
 Describe "Mesen Prebuild Logic Verification" {
     BeforeAll {
         # set up sandbox in Temp
@@ -11,6 +13,9 @@ Describe "Mesen Prebuild Logic Verification" {
 
         $script:OldProfile = $env:USERPROFILE
         $env:USERPROFILE = "T:\Users\testuser"
+
+        $PREBUILD_SCRIPT = "$PSScriptRoot/../prebuild_windows.ps1"
+        $RUNTIME_ID = "win-x64"
     }
 
     AfterAll {
@@ -32,52 +37,36 @@ Describe "Mesen Prebuild Logic Verification" {
 
             Mock Get-ChildItem {
                 param($Path, $Filter)
-                # This MUST contain 'runtimes\win-x64\native' or the script's filter fails
                 if ($Path -like "*\.nuget\*") {
-                    return [PSCustomObject]@{ FullName = "T:\Users\testuser\.nuget\packages\runtimes\win-x64\native\libHarfBuzzSharp.dll" }
+                    return [PSCustomObject]@{ FullName = Join-Path $env:USERPROFILE ".nuget\packages\runtimes\$RUNTIME_ID\native\$Filter" }
                 }
                 if ($Filter -eq "MesenCore.dll") {
-                    return [PSCustomObject]@{ FullName = "T:\Users\testuser\code\mesen\bin\win-x64\Release\MesenCore.dll" }
+                    return [PSCustomObject]@{ FullName = Join-Path $env:USERPROFILE "code\mesen\bin\$RUNTIME_ID\Release\MesenCore.dll" }
                 }
             }
         }
 
         It "Should handle Relative OutDir (Local Style)" {
             $params = @{
-                ProjectDir = "T:\Users\testuser\code\UI"
+                ProjectDir = Join-Path $env:USERPROFILE "code\UI"
                 OutDir     = "..\bin\Release"
-                RuntimeIdentifier = "win-x64"
+                RuntimeIdentifier = $RUNTIME_ID
             }
-            { & "$PSScriptRoot/../prebuild_windows.ps1" @params } | Should -Not -Throw
+            { & $PREBUILD_SCRIPT @params } | Should -Not -Throw
         }
 
         It "Should handle Absolute OutDir (CI Style)" {
             $params = @{
-                ProjectDir = "T:\Users\testuser\code\UI"
-                OutDir     = "T:\Users\testuser\code\bin\Release"
-                RuntimeIdentifier = "win-x64"
+                ProjectDir = Join-Path $env:USERPROFILE "code\UI"
+                OutDir     = Join-Path $env:USERPROFILE "code\bin\Release"
+                RuntimeIdentifier = $RUNTIME_ID
             }
-            { & "$PSScriptRoot/../prebuild_windows.ps1" @params } | Should -Not -Throw
+            { & $PREBUILD_SCRIPT @params } | Should -Not -Throw
         }
 
         It "Matches the vcxproj OutDir structure" {
             $Repo = "T:\MesenRepo"
             $ProjectDir = "$Repo\UI"
-            # This matches your vcxproj logic: $(SolutionDir)\bin\win-$(PlatformTarget)\$(Configuration)\
-            $ActualDllLocation = "$Repo\bin\win-x64\Release\MesenCore.dll"
-
-            # 1. Mock NuGet (The script hits this first!)
-            Mock Get-ChildItem {
-                param($Path, $Filter)
-                if ($Path -like "*\.nuget\*") {
-                    return [PSCustomObject]@{ FullName = "T:\Users\testuser\.nuget\packages\runtimes\win-x64\native\$Filter" }
-                }
-                # 2. Mock MesenCore discovery
-                if ($Filter -eq "MesenCore.dll") {
-                    return [PSCustomObject]@{ FullName = $ActualDllLocation }
-                }
-                return $null
-            } -Verifiable
 
             Mock Test-Path { return $true }
             Mock Copy-Item { }
@@ -88,22 +77,22 @@ Describe "Mesen Prebuild Logic Verification" {
 
             $params = @{
                 ProjectDir        = $ProjectDir
-                OutDir            = "..\bin\win-x64\Release"
-                RuntimeIdentifier = "win-x64"
+                OutDir            = "..\bin\$RUNTIME_ID\Release"
+                RuntimeIdentifier = $RUNTIME_ID
             }
 
-            { & "$PSScriptRoot/../prebuild_windows.ps1" @params } | Should -Not -Throw
+            { & $PREBUILD_SCRIPT @params } | Should -Not -Throw
         }
 
         It "Should verify the zip ends up in the ProjectDir" {
-            $ProjectDir = "T:\Users\testuser\code\mesen\UI"
+            $ProjectDir = Join-Path $env:USERPROFILE "code\mesen\UI"
 
             $params = @{
                 ProjectDir = $ProjectDir
                 OutDir     = "T:\Some\Other\Path"
-                RuntimeIdentifier = "win-x64"
+                RuntimeIdentifier = $RUNTIME_ID
             }
-            { & "$PSScriptRoot/../prebuild_windows.ps1" @params } | Should -Not -Throw
+            { & $PREBUILD_SCRIPT @params } | Should -Not -Throw
 
             $ExpectedDestination = Join-Path $ProjectDir "Dependencies.zip"
 
