@@ -12,12 +12,23 @@ $ErrorActionPreference = "Stop"
 
 try {
 
+    $MissingParams = foreach ($Name in "ProjectDir", "OutDir", "RuntimeIdentifier") {
+        if ([string]::IsNullOrWhiteSpace((Get-Variable $Name -ValueOnly))) {
+            $Name
+        }
+    }
+
+    if ($MissingParams) {
+        $List = $MissingParams -join ", "
+        throw [System.ArgumentException] "Required parameter(s) '[$List]' are missing or empty."
+    }
+
     # clean paths (PowerShell handles trailing slashes/dots automatically with Get-Item)
     $ProjectDir = $ProjectDir.TrimEnd('\')
     if ($OutDir -match '^[a-zA-Z]:') {
-         $FullOutDir = $OutDir
+        $FullOutDir = $OutDir
     } else {
-         $FullOutDir = Join-Path $ProjectDir $OutDir
+        $FullOutDir = Join-Path "$ProjectDir" $OutDir
     }
 
     Write-Host "[PREBUILD] Project Dir: $ProjectDir"
@@ -25,6 +36,9 @@ try {
 
     # ensure FullOutDir exists and move there
     if (!(Test-Path $FullOutDir)) { New-Item -ItemType Directory -Path $FullOutDir | Out-Null }
+    if (!(Test-Path $FullOutDir)) {
+        throw [System.IO.DirectoryNotFoundException] "$FullOutDir does not exist"
+    }
     Set-Location $FullOutDir
 
     # set up Dependencies folder
@@ -35,20 +49,26 @@ try {
     # 1. copy external dlls managed by NuGet package manager.
     # in web CI builds these are installed by 'dotnet restore'.
     $Libs = @("libHarfBuzzSharp.dll", "libSkiaSharp.dll")
+    $NuGetBase = "$env:USERPROFILE\.nuget\packages"
+    $SpecificPathPart = "runtimes\$RuntimeIdentifier\native"
 
     foreach ($Lib in $Libs) {
-         # We MUST look specifically for the native folder matching our RID
-         $SpecificPathPart = "runtimes\$RuntimeIdentifier\native"
-         $LibSourcePath = (Get-ChildItem -Path "$env:USERPROFILE\.nuget\packages" -Filter $Lib -Recurse | 
-                                 Where-Object { $_.FullName -like "*$SpecificPathPart*" } | 
-                                 Select-Object -First 1).FullName
+        $FoundFile = Get-ChildItem -Path $NuGetBase -Filter $Lib -Recurse | 
+                 Where-Object { $_.FullName -like "*$SpecificPathPart*" } | 
+                 Select-Object -First 1
 
-         if ($LibSourcePath -and (Test-Path $LibSourcePath)) {
-              Write-Host "[PREBUILD] Copying NuGet dll ($RuntimeIdentifier): $LibSourcePath"
-              Copy-Item $LibSourcePath -Destination $DepsFolder
-         } else {
-              throw "ERROR: Could not find $Lib for $RuntimeIdentifier in NuGet cache '$LibSourcePath' "
-         }
+    if ($FoundFile -and (Test-Path $FoundFile.FullName)) {
+        $LibSourcePath = $FoundFile.FullName
+        Write-Host "[PREBUILD] Copying NuGet dll $LibSourcePath"
+        Copy-Item $LibSourcePath -Destination $DepsFolder
+    } else {
+            $troubleshooting = "Please rebuild or restore packages. (Right-click solution in Visual Studio -> click 'Restore NuGet Packages', or run 'dotnet restore' in shell"
+
+            $SearchPattern = Join-Path $NuGetBase "*\$SpecificPathPart"
+            $DllSourceFolder = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($SearchPattern)
+
+            throw [System.IO.FileNotFoundException] "Required file '$Lib' for $RuntimeIdentifier not found in '$DllSourceFolder'. $troubleshooting"
+        }
     }
 
     # 2. copy MesenCore.dll output from building the Core c++ project
@@ -56,35 +76,39 @@ try {
     $DllSourcePath = Join-Path $FullOutDir $Dll
 
     if (!(Test-Path $DllSourcePath)) {
-         Write-Host "[PREBUILD] $Dll not found in $DllSourcePath . Checking fallback path"
-         # Fallback: Check if the file is one level up or if the OutDir had a double-slash issue
-         $ParentDir = Split-Path $FullOutDir -Parent
-         $DllSourcePath = (Get-ChildItem -Path $ParentDir -Filter $Dll -Recurse | Select-Object -First 1).FullName
+        Write-Host "[PREBUILD] $Dll not found in $DllSourcePath . Checking fallback path"
+        # Fallback: Check if the file is one level up or if the OutDir had a double-slash issue
+        $ParentDir = Split-Path $FullOutDir -Parent
+        $FoundFile = Get-ChildItem -Path $ParentDir -Filter $Dll -Recurse | Select-Object -First 1
+
+        if ($FoundFile) {
+            $DllSourcePath = $FoundFile.FullName
+        }
     }
 
     if ($DllSourcePath -and (Test-Path $DllSourcePath)) {
-         Write-Host "[PREBUILD] Copying $Dll from: $DllSourcePath"
-         Copy-Item $DllSourcePath -Destination $DepsFolder
+        Write-Host "[PREBUILD] Copying $Dll from: $DllSourcePath"
+        Copy-Item $DllSourcePath -Destination $DepsFolder
     } else {
-         Write-Host "DEBUG: Contents of $(Split-Path $FullOutDir -Parent):"
-         Get-ChildItem -Path (Split-Path $FullOutDir -Parent) -Recurse | Select-Object FullName
-         throw "ERROR: Required file $Dll not found in $DllSourcePath"
+        $ParentPath = Split-Path $DllSourcePath -Parent
+        $DllSourceFolder = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($ParentPath)
+        throw [System.IO.FileNotFoundException] "Required file '$Dll' not found in '$DllSourceFolder'. Please try rebuilding the solution."
     }
 
     # 3. copy files that exist in source control
     Write-Host "[PREBUILD] Copying other dependencies from $ProjectDir\Dependencies"
     Copy-Item -Path "$ProjectDir\Dependencies\*" -Destination $DepsFolder -Recurse -Force
 
-    # 6. Zip and move back to Project Dir
+    # zip files
     $ZipPath = Join-Path $FullOutDir "Dependencies.zip"
     if (Test-Path $ZipPath) { Remove-Item $ZipPath }
 
     Write-Host "[PREBUILD] Creating Zip $ZipPath..."
     Compress-Archive -Path $DepsFolder -DestinationPath $ZipPath -Force
 
+    # move instead of copy so we don't leave copies of the zip lying around
     Move-Item $ZipPath -Destination (Join-Path $ProjectDir "Dependencies.zip") -Force
     Write-Host "[PREBUILD] Success."
-
 }
 catch {
 
@@ -99,9 +123,6 @@ catch {
 
     # write to regular output so Visual Studio picks up + parses the message
     Write-Host $errorMessage
-
-    # also write to stderr for pester tests and standard logging
-    Write-Error $_.Exception.Message
 
     exit 1
 }
