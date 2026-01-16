@@ -107,5 +107,52 @@ Describe "Mesen Prebuild Logic Verification" {
                 $Destination -eq $ExpectedDestination
             }
         }
+
+        It "Should raise exception on empty paths" {
+            $params = @{ ProjectDir = ""; OutDir = ""; RuntimeIdentifier = "win-x64" }
+
+            & $PREBUILD_SCRIPT @params 2>&1
+
+            $error.Count | Should -BeGreaterThan 0
+            $error[0].Exception.GetType().FullName | Should -Be "System.ArgumentException"
+            $LASTEXITCODE | Should -Be 1
+        }
+
+        It "Should raise exception when NuGet DLL is missing" {
+            Mock Get-ChildItem { return $null } -ParameterFilter { $Path -like "*\.nuget\*" }
+
+            $params = @{
+                ProjectDir = "T:\Mesen"
+                OutDir     = "bin"
+                RuntimeIdentifier = $RUNTIME_ID
+            }
+
+            & $PREBUILD_SCRIPT @params 2>&1
+
+            $error.Count | Should -BeGreaterThan 0
+            $error[0].Exception.GetType().FullName | Should -Be "System.IO.FileNotFoundException"
+            $LASTEXITCODE | Should -Be 1
+        }
+
+        It "Should print error when MesenCore.dll is missing" {
+            Mock Test-Path { 
+                param($Path) 
+                if ($Path -like "*MesenCore.dll") { return $false }
+                return $true 
+            }
+            Mock Get-ChildItem { return $null } -ParameterFilter { $Filter -eq "MesenCore.dll" }
+
+            $params = @{
+                ProjectDir = "T:\Mesen"
+                OutDir     = "bin"
+                RuntimeIdentifier = $RUNTIME_ID
+            }
+
+            & $PREBUILD_SCRIPT @params 2>&1
+
+            $error.Count | Should -BeGreaterThan 0
+            $error[0].Exception.GetType().FullName | Should -Be "System.IO.FileNotFoundException"
+            $LASTEXITCODE | Should -Be 1
+        }
     }
 }
