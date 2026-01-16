@@ -6,6 +6,19 @@
 2) Compile as `Release`/`x64`
 3) Set the startup project to the `UI` project and run
 
+### Testing
+
+There is a [pester](https://pester.dev/) powershell test script in `UI/tests` that will verify the prebuild steps for the `UI` project.
+
+
+1. [Install pester](https://pester.dev/docs/introduction/installation) if needed.
+1. Run from any powershell console:
+
+```cmd
+$ .\UI\tests\prebuild_windows.test.ps1
+```
+
+
 ## Linux
 
 To build under Linux you need a version of Clang or GCC that supports C++17.  
