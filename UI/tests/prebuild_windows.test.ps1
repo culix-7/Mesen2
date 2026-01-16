@@ -16,6 +16,8 @@ Describe "Mesen Prebuild Logic Verification" {
 
         $PREBUILD_SCRIPT = "$PSScriptRoot/../prebuild_windows.ps1"
         $RUNTIME_ID = "win-x64"
+
+        $script:TestNumber = 0
     }
 
     AfterAll {
@@ -44,6 +46,11 @@ Describe "Mesen Prebuild Logic Verification" {
                     return [PSCustomObject]@{ FullName = Join-Path $env:USERPROFILE "code\mesen\bin\$RUNTIME_ID\Release\MesenCore.dll" }
                 }
             }
+            $error.Clear()
+
+            $script:TestNumber += 1
+            Write-Host "-------"
+            Write-Host "[Test] $TestNumber" -ForegroundColor Cyan
         }
 
         It "Should handle Relative OutDir (Local Style)" {
